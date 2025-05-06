@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"testing"
-	"time"
 
 	lark "github.com/larksuite/oapi-sdk-go/v3"
 )
@@ -32,41 +31,51 @@ func TestExample(t *testing.T) {
 	// 创建biorm实例
 	db := NewDB(_client) // 使用_避免未使用变量的警告
 
-	// 示例1：获取多维表格元数据
-	fmt.Println("=== 示例1：获取多维表格元数据 ===")
-	// meta, tx := db.Base(_baseAppToken).Meta()
-	meta, tx := db.Wiki(_wikiAppToken).Meta()
-	if tx.Error != nil {
-		log.Println("获取多维表格元数据失败：", tx.ErrorString())
-	} else {
-		log.Println("多维表格名称:", *meta.App.Name)
-	}
+	// // 示例1：获取多维表格元数据
+	// fmt.Println("=== 示例1：获取多维表格元数据 ===")
+	// // meta, tx := db.Base(_baseAppToken).Meta()
+	// meta, tx := db.Wiki(_wikiAppToken).Meta()
+	// if tx.Error != nil {
+	// 	log.Println("获取多维表格元数据失败：", tx.ErrorString())
+	// } else {
+	// 	log.Println("多维表格名称:", *meta.App.Name)
+	// }
 
-	// 示例2：创建记录
-	fmt.Println("\n=== 示例2：创建记录 ===")
-	// 也可以使用 db.WikiTable(_wikiAppToken + `.` + _tableId)
-	createdRecords, tx := db.Wiki(_wikiAppToken).Table(_tableId).Create(
-		map[string]interface{}{
-			"uuid": fmt.Sprintf("%d-1", time.Now().UnixMilli()),
-			"文本字段": "测试文本 1",
-		}, map[string]interface{}{
-			"uuid": fmt.Sprintf("%d-2", time.Now().UnixMilli()),
-			"更新时间": time.Now().UnixMilli(),
-		},
-	)
-	if tx.Error != nil {
-		log.Println("创建记录失败：", tx.ErrorString())
-	} else {
-		log.Println("创建成功：", createdRecords)
-	}
+	// // 示例2：创建记录
+	// fmt.Println("\n=== 示例2：创建记录 ===")
+	// // 也可以使用 db.WikiTable(_wikiAppToken + `.` + _tableId)
+	// createdRecords, tx := db.Wiki(_wikiAppToken).Table(_tableId).Create(
+	// 	map[string]interface{}{
+	// 		"uuid": fmt.Sprintf("%d-1", time.Now().UnixMilli()),
+	// 		"文本字段": "测试文本 1",
+	// 	}, map[string]interface{}{
+	// 		"uuid": fmt.Sprintf("%d-2", time.Now().UnixMilli()),
+	// 		"更新时间": time.Now().UnixMilli(),
+	// 	},
+	// )
+	// if tx.Error != nil {
+	// 	log.Println("创建记录失败：", tx.ErrorString())
+	// } else {
+	// 	log.Println("创建成功：", createdRecords)
+	// }
 
-	// 示例3：条件查询
-	fmt.Println("\n=== 示例3：条件查询 ===")
-	records, tx := db.Wiki(_wikiAppToken).Table(_tableId).
-		Select("uuid", "文本字段", "更新时间").
-		Where("更新时间 = ?", "Today").
-		Order("创建时间", true). // 降序排列
-		Records()
+	// // 示例3：条件查询
+	// fmt.Println("\n=== 示例3：条件查询 ===")
+	// records, tx := db.Wiki(_wikiAppToken).Table(_tableId).
+	// 	Select("uuid", "文本字段", "更新时间").
+	// 	Where("更新时间 = ?", "Today").
+	// 	Order("创建时间", true). // 降序排列
+	// 	Records()
+	// if tx.Error != nil {
+	// 	log.Println("查询记录失败：", tx.ErrorString())
+	// } else {
+	// 	log.Printf("查询到%d条记录\n", len(records))
+	// }
+
+	// 示例4：批量查询
+	fmt.Println("\n=== 示例4：批量查询 ===")
+	records, tx := db.Base(_baseAppToken).Table(_tableId).
+		BatchGet([]string{_recordId})
 	if tx.Error != nil {
 		log.Println("查询记录失败：", tx.ErrorString())
 	} else {

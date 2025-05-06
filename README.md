@@ -24,5 +24,20 @@
   - [x] 删除记录
   - [x] 新增多条记录
   - [ ] 更新多条记录
-  - [ ] 批量获取记录
+  - [x] 批量获取记录
   - [ ] 删除多条记录
+
+## 使用示例
+
+### 批量获取记录（通过记录ID）
+
+```go
+// 1. 通过记录ID数组批量获取记录
+recordIds := []string{"recordId1", "recordId2", "recordId3"}
+records, _ := client.Base("your_app_token").Table("your_table_id").BatchGet(recordIds)
+```
+
+**注意事项：**
+- 一次最多传入100个记录ID，超出部分将会被忽略
+- 这个方法比使用Where条件查询更高效，专门用于通过记录ID批量查询场景
+- 使用BatchGetRecords时，Where条件会被忽略

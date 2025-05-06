@@ -214,3 +214,26 @@ func (db *DB) Or(query string, args ...interface{}) (tx *DB) {
 
 	return tx
 }
+
+// View 指定视图ID
+func (db *DB) View(viewId string) *DB {
+	tx := db.getInstance()
+	tx.Statement.ViewId = viewId
+	return tx
+}
+
+// AutomaticFields 是否返回模板中所有字段
+func (db *DB) AutomaticFields(automaticFields bool) *DB {
+	tx := db.getInstance()
+	tx.Statement.AutomaticFields = automaticFields
+	return tx
+}
+
+// BatchGet 通过记录ID批量查询记录
+// recordIds 是记录ID的字符串数组。一次最多传入1000个recordId，超出部分将会被忽略
+func (db *DB) BatchGetRecords(recordIds []string) ([]*larkbitable.AppTableRecord, *DB) {
+	return db.BatchGet(recordIds)
+}
+
+// Model 指定要操作的模型
+// 实现DB.Model(&User{})

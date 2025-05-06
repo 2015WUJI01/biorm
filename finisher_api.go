@@ -3,6 +3,7 @@ package biorm
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -172,6 +173,105 @@ func (db *DB) Records() (data []*larkbitable.AppTableRecord, tx *DB) {
 		}
 		pageToken = *response.Data.PageToken
 	}
+
+	// 清理无需保留的资源，帮助垃圾回收
+	tx.Finalize()
+
+	return
+}
+
+// BatchGet 通过记录ID批量查询记录
+// recordIds 是记录ID的字符串数组。一次最多传入100个recordId，超出部分将会被忽略
+func (db *DB) BatchGet(recordIds []string) (data []*larkbitable.AppTableRecord, tx *DB) {
+	tx = db.Clone()
+	if tx.hasError() {
+		return
+	}
+
+	if tx.AppToken == "" {
+		tx.Error = ErrAppTokenRequired
+		return
+	}
+	if tx.TableId == "" {
+		tx.Error = ErrTableIdRequired
+		return
+	}
+	if len(recordIds) == 0 {
+		tx.Error = errors.New("recordIds cannot be empty")
+		return
+	}
+
+	// 记录ID数量限制
+	if len(recordIds) > 100 {
+		log.Printf("警告: 批量查询的记录ID超过100个，将截取前100个")
+		recordIds = recordIds[:100]
+	}
+
+	// 构建请求体
+	body := map[string]interface{}{
+		"record_ids":       recordIds,
+		"user_id_type":     tx.Statement.UserIdType,
+		"automatic_fields": tx.Statement.AutomaticFields,
+	}
+
+	// 添加可选字段参数
+	if tx.Statement.Selects != nil && len(tx.Statement.Selects) > 0 {
+		body["field_names"] = tx.Statement.Selects
+	}
+
+	// 添加视图参数
+	if tx.Statement.ViewId != "" {
+		body["view_id"] = tx.Statement.ViewId
+	}
+
+	// 构建请求
+	req := larkbitable.NewBatchGetAppTableRecordReqBuilder().
+		AppToken(tx.AppToken).
+		TableId(tx.TableId).
+		Body(larkbitable.NewBatchGetAppTableRecordReqBodyBuilder().
+			RecordIds(recordIds).
+			UserIdType(tx.Statement.UserIdType).
+			// WithSharedUrl(tx.Statement.WithSharedUrl).
+			AutomaticFields(tx.Statement.AutomaticFields).
+			Build()).
+		Build()
+
+	// 发起请求
+	resp, err := tx.cli.Bitable.V1.AppTableRecord.BatchGet(context.Background(), req)
+
+	// 处理错误
+	if err != nil {
+		tx.Error = err
+		if resp != nil {
+			tx.ApiResp = resp.ApiResp
+			tx.CodeError = &resp.CodeError
+		}
+		return
+	}
+	if resp == nil {
+		tx.Error = ErrResponseIsNil
+		return
+	}
+
+	if resp.RawBody == nil {
+		tx.Error = fmt.Errorf("response body is nil: %w", ErrResponseIsNil)
+		return
+	}
+
+	var response larkbitable.BatchGetAppTableRecordResp
+	err = json.Unmarshal(resp.RawBody, &response)
+	if err != nil {
+		tx.Error = fmt.Errorf("json unmarshal response body failed: %w", err)
+		return
+	}
+	if response.Data == nil {
+		tx.Error = fmt.Errorf("response data is nil: %w", ErrResponseIsNil)
+		tx.ApiResp = resp.ApiResp
+		tx.CodeError = &resp.CodeError
+		return
+	}
+
+	data = response.Data.Records
 
 	// 清理无需保留的资源，帮助垃圾回收
 	tx.Finalize()
