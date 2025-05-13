@@ -450,6 +450,8 @@ func (db *DB) createSingle(fields map[string]interface{}) (data *larkbitable.App
 
 	req := larkbitable.NewCreateAppTableRecordReqBuilder().
 		AppToken(tx.AppToken).TableId(tx.TableId).
+		UserIdType(tx.Statement.UserIdType).
+		ClientToken(tx.Statement.ClientToken).
 		AppTableRecord(larkbitable.NewAppTableRecordBuilder().
 			Fields(fields).
 			Build()).
